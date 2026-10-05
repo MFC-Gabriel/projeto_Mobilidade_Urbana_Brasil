@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projeto Mobilidade Urbana no Brasil — G1</title>
+<meta name="description" content="Análise e visualização de dados de mobilidade urbana e transporte público no Brasil (2015–2024) com Python, Pandas, Seaborn e Streamlit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#F5F6F8; --tinta:#172033; --suave:#4A566B; --borda:#D5DAE3; --branco:#FFFFFF;
+  --onibus:#E4572E; --brt:#F2A900; --metro:#1E63D6; --trem:#00897B; --vlt:#8E44AD; --bike:#5C6B7A;
+  --titulo:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --corpo:"Public Sans","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--papel);color:var(--tinta);font:400 1.0625rem/1.65 var(--corpo)}
+a{color:var(--metro)}
+a:focus-visible,.botao:focus-visible{outline:3px solid var(--brt);outline-offset:3px}
+.pagina{max-width:62rem;margin:0 auto;padding:0 1.25rem}
+
+header.topo{padding:3.5rem 0 1.5rem}
+h1{font:800 clamp(2.1rem,5.5vw,3.6rem)/1.05 var(--titulo);margin:0 0 1rem;letter-spacing:-.02em;max-width:18ch}
+.sub{font-size:1.15rem;color:var(--suave);max-width:46rem;margin:0 0 .5rem}
+.autor{font-size:.95rem;color:var(--suave);margin:0}
+
+.mapa{margin:1.5rem 0 0;background:var(--branco);border:1px solid var(--borda);border-radius:6px;padding:1rem 1rem .5rem}
+.mapa svg{display:block;width:100%;height:auto}
+.mapa figcaption{font-size:.9rem;color:var(--suave);padding:.25rem 0 .5rem}
+
+/* seções ao longo de uma "linha" de metrô */
+main{position:relative;margin-top:2.5rem}
+section{position:relative;padding:0 0 2.75rem 2.25rem;border-left:4px solid var(--metro)}
+section:nth-of-type(6n+2){border-color:var(--trem)}
+section:nth-of-type(6n+3){border-color:var(--brt)}
+section:nth-of-type(6n+4){border-color:var(--onibus)}
+section:nth-of-type(6n+5){border-color:var(--vlt)}
+section:nth-of-type(6n+6){border-color:var(--bike)}
+section::before{content:"";position:absolute;left:-12px;top:.35rem;width:20px;height:20px;border-radius:50%;background:var(--branco);border:4px solid var(--tinta)}
+section:last-of-type{border-left-color:transparent}
+h2{font:700 1.75rem/1.2 var(--titulo);margin:0 0 .75rem;letter-spacing:-.01em}
+h3{font:700 1.1rem/1.3 var(--titulo);margin:1.25rem 0 .25rem}
+p{margin:0 0 1rem;max-width:44rem}
+ul{padding-left:1.2rem;max-width:44rem}
+li{margin-bottom:.35rem}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.75rem;margin:1rem 0}
+.kpi{background:var(--branco);border:1px solid var(--borda);border-left:5px solid var(--cor,var(--metro));border-radius:4px;padding:.8rem 1rem}
+.kpi dt{font-size:.9rem;color:var(--suave);margin:0}
+.kpi dd{margin:.1rem 0 0;font:700 1.45rem/1.25 var(--titulo)}
+.kpi small{display:block;font:400 .88rem/1.4 var(--corpo);color:var(--suave);margin-top:.15rem}
+
+.paginas{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.75rem;padding:0;list-style:none;max-width:none}
+.paginas li{background:var(--branco);border:1px solid var(--borda);border-radius:4px;padding:.8rem 1rem;margin:0}
+.paginas strong{font-family:var(--titulo)}
+
+.galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));gap:1rem;margin:1rem 0}
+.galeria figure{margin:0;background:var(--branco);border:1px solid var(--borda);border-radius:4px;padding:.6rem}
+.galeria img{width:100%;height:auto;display:block}
+.galeria figcaption{font-size:.9rem;color:var(--suave);padding:.5rem .25rem 0}
+
+.aviso{background:#FFF6DC;border:1px solid #E9CF86;border-radius:4px;padding:.9rem 1.1rem;max-width:44rem}
+.aviso p{margin:0}
+
+.etiquetas{display:flex;flex-wrap:wrap;gap:.5rem;padding:0;list-style:none;max-width:none}
+.etiquetas li{margin:0;background:var(--tinta);color:#fff;padding:.3rem .8rem;border-radius:999px;font-size:.95rem;font-weight:500}
+
+.botoes{display:flex;flex-wrap:wrap;gap:.6rem;margin:.75rem 0}
+.botao{display:inline-block;text-decoration:none;font-weight:600;padding:.65rem 1.1rem;border-radius:4px;border:2px solid var(--tinta);color:var(--tinta);background:var(--branco)}
+.botao:hover{background:var(--tinta);color:#fff}
+.botao.principal{background:var(--metro);border-color:var(--metro);color:#fff}
+.botao.principal:hover{background:#174FAD;border-color:#174FAD}
+
+footer{border-top:1px solid var(--borda);padding:1.5rem 0 3rem;color:var(--suave);font-size:.95rem}
+@media (max-width:560px){section{padding-left:1.5rem}.galeria{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="pagina">
+
+<header class="topo">
+  <h1>Mobilidade Urbana e Transporte Público no Brasil</h1>
+  <p class="sub">Dashboard analítico com Python, Pandas, Matplotlib, Seaborn e Streamlit sobre 10 anos de dados simulados de 37 cidades (2015–2024).</p>
+  <p class="autor">Avaliação G1 · Linguagem de Programação: Análise e Visualização de Dados com Python · <!-- TODO: troque pelo seu nome --> Seu Nome</p>
+
+  <figure class="mapa">
+    <svg viewBox="0 0 760 250" role="img" aria-labelledby="mapa-t mapa-d">
+      <title id="mapa-t">Seis meios de transporte atravessando cinco regiões</title>
+      <desc id="mapa-d">Diagrama no estilo mapa de metrô: seis linhas coloridas, uma para cada meio de transporte, passam por cinco estações que representam as regiões do Brasil.</desc>
+      <g font-family="Public Sans, Segoe UI, sans-serif" font-size="13" fill="#172033">
+        <g text-anchor="middle" font-weight="600">
+          <text x="200" y="20">Norte</text><text x="320" y="20">Nordeste</text><text x="440" y="20">Centro-Oeste</text><text x="560" y="20">Sudeste</text><text x="680" y="20">Sul</text>
+        </g>
+        <g stroke-width="8" stroke-linecap="round" fill="none">
+          <polyline stroke="#E4572E" points="110,50 680,50"/>
+          <polyline stroke="#F2A900" points="110,90 200,90 230,70 320,70 350,90 680,90"/>
+          <polyline stroke="#1E63D6" points="110,130 680,130"/>
+          <polyline stroke="#00897B" points="110,170 200,170 230,190 560,190 590,170 680,170"/>
+          <polyline stroke="#8E44AD" points="110,210 320,210 350,230 680,230"/>
+          <polyline stroke="#5C6B7A" points="110,150 680,150" stroke-dasharray="1 14"/>
+        </g>
+        <g text-anchor="end" font-weight="600">
+          <text x="98" y="55">Ônibus</text><text x="98" y="95">BRT</text><text x="98" y="135">Metrô</text><text x="98" y="155">Bicicleta</text><text x="98" y="175">Trem</text><text x="98" y="215">VLT</text>
+        </g>
+        <g fill="#fff" stroke="#172033" stroke-width="4">
+          <circle cx="200" cy="130" r="9"/><circle cx="320" cy="130" r="9"/><circle cx="440" cy="130" r="9"/><circle cx="560" cy="130" r="9"/><circle cx="680" cy="130" r="9"/>
+        </g>
+      </g>
+    </svg>
+    <figcaption>Cada linha representa um meio de transporte; as estações são as cinco regiões do país. Na base, os seis meios têm participação parecida no total de passageiros.</figcaption>
+  </figure>
+</header>
+
+<main>
+
+<section id="sobre">
+  <h2>Sobre o projeto</h2>
+  <p>O crescimento das cidades pressiona o transporte público: viagens mais longas, veículos lotados e vias congestionadas afetam a qualidade de vida, a produtividade e o meio ambiente. Este projeto investiga padrões de mobilidade urbana no Brasil entre 2015 e 2024 e organiza os resultados em um dashboard interativo.</p>
+  <p>O trabalho cobre leitura e tratamento da base, análise exploratória, criação de indicadores, visualizações, correlação estatística e publicação online.</p>
+</section>
+
+<section id="perguntas">
+  <h2>Perguntas de análise</h2>
+  <ul>
+    <li>Quais cidades têm o maior fluxo de passageiros?</li>
+    <li>Qual meio de transporte é o mais utilizado?</li>
+    <li>O tempo médio de deslocamento aumentou ao longo do tempo?</li>
+    <li>Existem diferenças regionais relevantes e quais regiões sofrem mais pressão?</li>
+    <li>Há relação estatística entre passageiros, tempo de deslocamento e congestionamento?</li>
+  </ul>
+</section>
+
+<section id="indicadores">
+  <h2>Indicadores analisados</h2>
+  <p>Valores da base completa. No dashboard, todos eles são recalculados conforme os filtros escolhidos.</p>
+  <dl class="kpis">
+    <div class="kpi" style="--cor:var(--metro)"><dt>Total de passageiros</dt><dd>4,45 bilhões</dd></div>
+    <div class="kpi" style="--cor:var(--trem)"><dt>Cidade mais movimentada</dt><dd>Rio de Janeiro</dd><small>131,1 milhões de passageiros</small></div>
+    <div class="kpi" style="--cor:var(--brt)"><dt>Meio de transporte predominante</dt><dd>Metrô</dd><small>17,5% do total; o menor, Ônibus, tem 15,8%</small></div>
+    <div class="kpi" style="--cor:var(--onibus)"><dt>Tempo médio de deslocamento</dt><dd>54,3 min</dd></div>
+    <div class="kpi" style="--cor:var(--vlt)"><dt>Tarifa média</dt><dd>R$ 5,76</dd></div>
+    <div class="kpi" style="--cor:var(--bike)"><dt>Nível médio de congestionamento</dt><dd>Médio</dd><small>2,47 em uma escala de 1 a 4</small></div>
+  </dl>
+</section>
+
+<section id="achados">
+  <h2>O que os dados mostram</h2>
+  <ul>
+    <li><strong>Fluxo:</strong> as 5 cidades mais movimentadas ficam entre 128 e 131 milhões de passageiros, uma diferença pequena.</li>
+    <li><strong>Tempo:</strong> a média anual oscila entre 53,1 e 55,6 min, sem tendência de aumento entre 2015 e 2024.</li>
+    <li><strong>Regiões:</strong> o Sudeste soma 35% dos passageiros, mas tem 13 das 37 cidades. Por cidade, as regiões são muito parecidas.</li>
+    <li><strong>Congestionamento:</strong> os quatro níveis têm pesos semelhantes e o tempo médio em nível crítico (53,9 min) é igual ao do nível baixo (54,1 min).</li>
+    <li><strong>Correlação:</strong> o maior coeficiente entre qualquer par de variáveis é 0,03. Passageiros e tempo de deslocamento: r = 0,001, sem relação detectável.</li>
+  </ul>
+  <p>Resultados tão uniformes são característicos de uma base simulada por sorteio. O valor do projeto está no método aplicado e na leitura crítica dos números.</p>
+</section>
+
+<section id="dashboard">
+  <h2>Dashboard interativo</h2>
+  <p>O dashboard tem cinco páginas e sete filtros múltiplos na barra lateral (ano, mês, região, estado, cidade, meio de transporte e nível de congestionamento). Os filtros valem para todas as páginas.</p>
+  <ul class="paginas">
+    <li><strong>Visão geral</strong><br>KPIs, evolução temporal e conclusão executiva.</li>
+    <li><strong>Regiões e cidades</strong><br>Rankings, comparação regional e índice de pressão.</li>
+    <li><strong>Meios de transporte</strong><br>Comparação modal, emissões e tabela dinâmica.</li>
+    <li><strong>Congestionamento</strong><br>Distribuição dos níveis e sazonalidade mês × ano.</li>
+    <li><strong>Correlações</strong><br>Matriz de Pearson/Spearman, dispersão e teste de significância.</li>
+  </ul>
+  <div class="botoes">
+    <!-- TODO: cole aqui o link do seu app no Streamlit Community Cloud -->
+    <a class="botao principal" href="https://SEU-APP.streamlit.app/">Acessar o dashboard Streamlit</a>
+  </div>
+</section>
+
+<section id="graficos">
+  <h2>Gráficos da análise</h2>
+  <div class="galeria">
+    <figure><img src="imagens/02_evolucao_temporal.png" alt="Linha do tempo de passageiros por mês e do tempo médio de deslocamento por ano, ambos sem tendência clara" loading="lazy"><figcaption>Evolução temporal: o fluxo e o tempo de deslocamento oscilam sem tendência.</figcaption></figure>
+    <figure><img src="imagens/03_cidades_regioes.png" alt="Barras com as dez cidades de maior fluxo e comparação de passageiros entre regiões" loading="lazy"><figcaption>Cidades e regiões: o Sudeste lidera no total, mas não por cidade.</figcaption></figure>
+    <figure><img src="imagens/04_meios_transporte.png" alt="Barras comparando passageiros, tarifa, velocidade e emissão de CO2 entre os seis meios de transporte" loading="lazy"><figcaption>Comparação entre os meios de transporte.</figcaption></figure>
+    <figure><img src="imagens/06_correlacoes.png" alt="Matriz de correlação com valores próximos de zero e gráfico de dispersão sem padrão entre passageiros e tempo de deslocamento" loading="lazy"><figcaption>Correlações próximas de zero em todos os pares de variáveis.</figcaption></figure>
+  </div>
+</section>
+
+<section id="limitacoes">
+  <h2>Limitações</h2>
+  <div class="aviso">
+    <p><strong>A base é simulada.</strong> Não há coluna de horário, então os horários de pico não puderam ser medidos (a sazonalidade foi analisada por mês e ano). Também não há população, e por isso a relação entre população e fluxo não pôde ser testada. Velocidade, emissão e tarifa não trazem unidade na base.</p>
+  </div>
+</section>
+
+<section id="tecnologias">
+  <h2>Tecnologias utilizadas</h2>
+  <ul class="etiquetas">
+    <li>Python</li><li>Pandas</li><li>NumPy</li><li>Matplotlib</li><li>Seaborn</li><li>SciPy</li><li>Streamlit</li><li>GitHub</li><li>GitHub Pages</li>
+  </ul>
+</section>
+
+<section id="arquivos">
+  <h2>Arquivos do projeto</h2>
+  <div class="botoes">
+    <a class="botao" href="README.md">Ver README</a>
+    <a class="botao" href="notebooks/analise_mobilidade_urbana.ipynb">Ver notebook</a>
+    <a class="botao" href="dados/simulacao_mobilidade_urbana_brasil.csv">Baixar base de dados</a>
+    <!-- TODO: troque pelo link do seu repositório -->
+    <a class="botao" href="https://github.com/SEU-USUARIO/projeto-mobilidade-urbana">Código no GitHub</a>
+  </div>
+</section>
+
+</main>
+
+<footer>Projeto desenvolvido para fins educacionais · Análise e Visualização de Dados com Python</footer>
+</div>
+</body>
+</html>
